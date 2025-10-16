@@ -369,7 +369,7 @@
         }
         const code = assignments[p.id];
         if (code) {
-          const guildColor = guilds.get(code) || '#888';
+         const guildColor = guilds.get(code) || '#888';
           p.style.fill = guildColor;
           p.style.fillOpacity = 0.4;
           p.style.stroke = guildColor;
@@ -378,8 +378,9 @@
           p.style.fillOpacity = 1;
           p.style.stroke = 'var(--tile-stroke)';
         }
-        p.style.strokeWidth = 2;
+          p.style.strokeWidth = 2;
       }
+
 
       function repaintAll() {
         if (!tilePaths) return;
@@ -387,37 +388,48 @@
         addLabels();
       }
 
-      function addLabels() {
-        if (!svg) return;
-        svg.querySelector('#_labels')?.remove();
-        const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        labelLayer.setAttribute('id', '_labels');
-        labelLayer.setAttribute('pointer-events', 'none');
-        const paths = Array.from(
-          svg.querySelectorAll('path[id^="ruin"], path[id^="RUIN"], path[id*="ruin"]')
-        );
-        for (const p of paths) {
-          const id = p.id || p.getAttribute('id');
-          const type = getRuinType(id);
-          if (!type) continue;
-          const bbox = p.getBBox();
-          const cx = bbox.x + bbox.width / 2;
-          const cy = bbox.y + bbox.height / 2;
-          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          text.setAttribute('x', cx);
-          text.setAttribute('y', cy);
-          text.setAttribute('text-anchor', 'middle');
-          text.setAttribute('dominant-baseline', 'middle');
-          text.setAttribute('font-family', 'system-ui, sans-serif');
-          text.setAttribute('font-weight', '900');
-          text.setAttribute('font-size', '28');
-          text.setAttribute('fill', '#262f40');
-          text.setAttribute('stroke', '#fff');
-          text.setAttribute('stroke-width', '1');
-          text.classList.add('svg-label');
-          text.textContent = (type === 'throne') ? '♛' : type;
-          labelLayer.appendChild(text);
+    function addLabels() {
+      if (!svg) return;
+
+      // Remove previous labels if they exist
+      svg.querySelector('#_labels')?.remove();
+
+      const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      labelLayer.setAttribute('id', '_labels');
+      labelLayer.setAttribute('pointer-events', 'none');
+
+      const paths = Array.from(
+        svg.querySelectorAll('path[id^="ruin"], path[id^="RUIN"], path[id*="ruin"]')
+      );
+
+      for (const p of paths) {
+        const id = p.id || p.getAttribute('id');
+        const type = getRuinType(id); // extracts "2" from "ruin2_l14"
+        if (!type) continue;
+
+        const bbox = p.getBBox();
+        const cx = bbox.x + bbox.width / 2;
+        const cy = bbox.y + bbox.height / 2;
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', cx);
+        text.setAttribute('y', cy);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('dominant-baseline', 'middle');
+        text.setAttribute('font-family', 'system-ui, sans-serif');
+        text.setAttribute('font-weight', '900');
+        text.setAttribute('font-size', '28');
+        text.setAttribute('fill', '#262f40');
+        text.setAttribute('stroke', '#fff');
+        text.setAttribute('stroke-width', '1');
+        text.classList.add('svg-label');
+
+        // Display only the ruin number or the throne symbol
+        text.textContent = (type === 'throne') ? '♛' : type;
+
+        labelLayer.appendChild(text);
         }
+
         svg.appendChild(labelLayer);
       }
 
