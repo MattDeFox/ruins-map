@@ -271,9 +271,13 @@
         const code = assignments[p.id];
         p.style.stroke = 'var(--tile-stroke)';
         p.style.strokeWidth = 1.5;
+
+        const isThrone = (type === 'throne');
+        
         if (code) {
           p.style.fill = guilds.get(code) || '#888';
           p.style.fillOpacity = 0.7;
+          p.style.fillOpacity = isThrone ? 0.9 : 0.6;
         } else {
           p.style.fill = baseColor;
           p.style.fillOpacity = 1;
@@ -301,6 +305,8 @@
           text.textContent = type === 'throne' ? '♛' : type;
           labelLayer.appendChild(text);
         }
+        text.setAttribute('fill', '#fff');   // for darker tiles
+        text.setAttribute('stroke', '#000'); // outline text
         svg.appendChild(labelLayer);
       }
 
