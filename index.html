@@ -7,7 +7,7 @@
   <style>
     :root {
       --map-bg: #a3aaba;
-      --tile-stroke: #383838;
+      --tile-stroke: #2c2f35;
       --label-color: #0b0f18;
 
       /* Default theme colors */
@@ -338,7 +338,7 @@
 
         const code = assignments[p.id];
          p.style.stroke = 'var(--tile-stroke)';
-         p.style.strokeWidth = 2;
+         p.style.strokeWidth = 1;
 
        if (code) {
         p.style.fill = guilds.get(code) || '#888';
@@ -374,6 +374,11 @@
     svg.appendChild(g);
   }
 
+       function repaintAll() {
+         if (!tilePaths) return;
+         tilePaths.forEach(p => paintTile(p));
+         addLabels();
+        }      
 
       function attachInteractivity() {
         if (!svg) {
