@@ -9,6 +9,7 @@
       --map-bg: #a3aaba;
       --tile-stroke: #2c2f35;
       --label-color: #0b0f18;
+
       /* Default theme colors */
       --ruin1-color: #dfeafe;
       --ruin2-color: #cddcf9;
@@ -18,10 +19,7 @@
       --throne-color: #dfeafe;
     }
 
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
+    html, body { height: 100%; margin: 0; }
 
     body {
       display: grid;
@@ -52,13 +50,8 @@
     }
 
     @media (max-width: 720px) {
-      body {
-        grid-template-columns: 1fr;
-      }
-      #mapBox {
-        width: 92vmin;
-        min-width: 0;
-      }
+      body { grid-template-columns: 1fr; }
+      #mapBox { width: 92vmin; min-width: 0; }
     }
 
     object#map {
@@ -231,47 +224,31 @@
   </div>
 
   <aside id="ui" aria-label="Controls">
-    <!-- Guilds Section -->
     <div>
       <h1>Guilds</h1>
       <div class="row">
-        <input id="guildCode"
-               maxlength="3"
-               placeholder="TAG"
-               aria-label="3-letter guild code" />
-        <input type="color"
-               id="guildColor"
-               value="#7aa2ff"
-               title="Pick guild color" />
+        <input id="guildCode" maxlength="3" placeholder="TAG" aria-label="3-letter guild code" />
+        <input type="color" id="guildColor" value="#7aa2ff" title="Pick guild color" />
         <button id="addGuild" class="primary">Add</button>
-        <button id="clearGuilds"
-                class="danger"
-                title="Remove all guilds">Clear All</button>
+        <button id="clearGuilds" class="danger" title="Remove all guilds">Clear All</button>
       </div>
       <div id="legend"></div>
-      <div class="hint">
-        Tip: click a chip to make it active. Click again to deactivate.
-        Shift+Click a tile to unassign.
-      </div>
+      <div class="hint">Tip: click a chip to make it active. Click again to deactivate. Shift+Click a tile to unassign.</div>
     </div>
 
     <div class="sep"></div>
 
-    <!-- Tiles Section -->
     <div>
       <h1>Tiles</h1>
       <div class="row">
         <button id="clearAssignments" class="danger">Unassign All Tiles</button>
         <button id="repaint">Repaint</button>
       </div>
-      <div class="hint">
-        If no guild is active, clicking a tile unassigns it.
-      </div>
+      <div class="hint">If no guild is active, clicking a tile unassigns it.</div>
     </div>
 
     <div class="sep"></div>
 
-    <!-- Save / Load Section -->
     <div>
       <h1>Save / Load</h1>
       <div class="row">
@@ -279,13 +256,8 @@
         <button id="importBtn" class="primary">Import JSON</button>
         <button id="wipeStorage" class="danger">Wipe Storage</button>
       </div>
-      <textarea id="io"
-                spellcheck="false"
-                placeholder="Click Export to see state here, or paste JSON then Import."></textarea>
-      <div class="hint">
-        State is also auto-saved to <code>localStorage</code> as
-        <code>ruinsMapState</code>.
-      </div>
+      <textarea id="io" spellcheck="false" placeholder="Click Export to see state here, or paste JSON then Import."></textarea>
+      <div class="hint">State is also auto-saved to <code>localStorage</code> as <code>ruinsMapState</code>.</div>
     </div>
   </aside>
 
@@ -324,17 +296,14 @@
       const io = document.getElementById('io');
 
       function normalizeCode(v) {
-        return (v || '')
-          .toUpperCase()
-          .replace(/[^A-Z0-9]/g, '')
-          .slice(0, 3);
+        return (v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
       }
 
       function persist() {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ guilds: Object.fromEntries(guilds), assignments })
-        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          guilds: Object.fromEntries(guilds),
+          assignments
+        }));
       }
 
       function restore() {
@@ -349,38 +318,37 @@
         }
       }
 
-      function getRuinType(inputId) {
-        const m = inputId.match(/ruin(\\d+)/i);
+      function getRuinType(id) {
+        const m = id.match(/ruin(\d+)/i);
         if (m) return m[1];
-        if (/throne/i.test(inputId)) return 'throne';
+        if (/throne/i.test(id)) return 'throne';
         return null;
       }
 
       function paintTile(p) {
         const grp = p.closest('g[id^="ruin"]');
-        let type = grp ? getRuinType(grp.id) : null;
+        const type = grp ? getRuinType(grp.id) : null;
         let baseColor = '#ccc';
-        p.style.stroke = 'var(--tile-stroke)';
-        p.style.strokeWidth = 2;
+
         if (type && typeColors[type]) {
           baseColor = getComputedStyle(document.documentElement)
             .getPropertyValue(typeColors[type])
             .trim();
         }
+
         const code = assignments[p.id];
+        p.style.stroke = '#3b3b3b';
+        p.style.strokeWidth = 1.5;
+
         if (code) {
-         const guildColor = guilds.get(code) || '#888';
+          const guildColor = guilds.get(code) || '#888';
           p.style.fill = guildColor;
-          p.style.fillOpacity = 0.4;
-          p.style.stroke = guildColor;
+          p.style.fillOpacity = 0.6;
         } else {
           p.style.fill = baseColor;
           p.style.fillOpacity = 1;
-          p.style.stroke = 'var(--tile-stroke)';
         }
-          p.style.strokeWidth = 2;
       }
-
 
       function repaintAll() {
         if (!tilePaths) return;
@@ -388,46 +356,40 @@
         addLabels();
       }
 
-    function addLabels() {
-      if (!svg) return;
+      function addLabels() {
+        if (!svg) return;
+        svg.querySelector('#_labels')?.remove();
 
-      // Remove previous labels if they exist
-      svg.querySelector('#_labels')?.remove();
+        const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        labelLayer.setAttribute('id', '_labels');
+        labelLayer.setAttribute('pointer-events', 'none');
 
-      const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      labelLayer.setAttribute('id', '_labels');
-      labelLayer.setAttribute('pointer-events', 'none');
+        const paths = Array.from(svg.querySelectorAll(tileSelector));
 
-      const paths = Array.from(
-        svg.querySelectorAll('path[id^="ruin"], path[id^="RUIN"], path[id*="ruin"]')
-      );
+        for (const p of paths) {
+          const id = p.id || p.getAttribute('id');
+          const type = getRuinType(id);
+          if (!type) continue;
 
-      for (const p of paths) {
-        const id = p.id || p.getAttribute('id');
-        const type = getRuinType(id); // extracts "2" from "ruin2_l14"
-        if (!type) continue;
+          const bbox = p.getBBox();
+          const cx = bbox.x + bbox.width / 2;
+          const cy = bbox.y + bbox.height / 2;
 
-        const bbox = p.getBBox();
-        const cx = bbox.x + bbox.width / 2;
-        const cy = bbox.y + bbox.height / 2;
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('x', cx);
+          text.setAttribute('y', cy);
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('dominant-baseline', 'middle');
+          text.setAttribute('font-family', 'system-ui, sans-serif');
+          text.setAttribute('font-weight', '900');
+          text.setAttribute('font-size', '28');
+          text.setAttribute('fill', '#262f40');
+          text.setAttribute('stroke', '#fff');
+          text.setAttribute('stroke-width', '1');
+          text.classList.add('svg-label');
+          text.textContent = (type === 'throne') ? '♛' : type;
 
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', cx);
-        text.setAttribute('y', cy);
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('dominant-baseline', 'middle');
-        text.setAttribute('font-family', 'system-ui, sans-serif');
-        text.setAttribute('font-weight', '900');
-        text.setAttribute('font-size', '28');
-        text.setAttribute('fill', '#262f40');
-        text.setAttribute('stroke', '#fff');
-        text.setAttribute('stroke-width', '1');
-        text.classList.add('svg-label');
-
-        // Display only the ruin number or the throne symbol
-        text.textContent = (type === 'throne') ? '♛' : type;
-
-        labelLayer.appendChild(text);
+          labelLayer.appendChild(text);
         }
 
         svg.appendChild(labelLayer);
@@ -438,6 +400,7 @@
           alert('No <svg> found inside RuinsMapX.svg');
           return;
         }
+
         tilePaths = Array.from(svg.querySelectorAll(tileSelector));
         tilePaths.forEach(p => {
           p.style.cursor = 'pointer';
@@ -445,23 +408,30 @@
             e.preventDefault();
             const id = p.id || p.getAttribute('id');
             const cur = assignments[id];
+            const isThrone = /throne/i.test(id);
+            const isAssigning = cur !== activeGuild;
+
             if (e.shiftKey || !activeGuild) {
               delete assignments[id];
             } else {
-              const count = Object.values(assignments)
-                .filter(v => v === activeGuild).length;
-              const isAssigning = cur !== activeGuild;
-              if (isAssigning && count >= MAX_TILES_PER_GUILD) {
-                alert(`Guild ${activeGuild} has reached the max of ${MAX_TILES_PER_GUILD} tiles.`);
-                return;
+              // Apply tile restriction unless throne
+              if (isAssigning && !isThrone) {
+                const count = Object.values(assignments).filter(v => v === activeGuild).length;
+                if (count >= MAX_TILES_PER_GUILD) {
+                  alert(`Guild ${activeGuild} has reached the max of ${MAX_TILES_PER_GUILD} tiles.`);
+                  return;
+                }
               }
+
               assignments[id] = isAssigning ? activeGuild : undefined;
               if (assignments[id] === undefined) delete assignments[id];
             }
+
             paintTile(p);
             persist();
           });
         });
+
         repaintAll();
       }
 
@@ -538,9 +508,9 @@
         persist();
       }
 
-      // === Startup ===
       restore();
       renderLegend();
+
       let tried = false;
       mapObj.addEventListener('load', async () => {
         if (tried) return;
@@ -555,15 +525,21 @@
         if (ok) attachInteractivity();
       }, 700);
 
-      // === UI Event Listeners ===
+           // === UI Handlers ===
       addBtn.addEventListener('click', () => {
         const code = normalizeCode(codeInput.value);
-        if (!code || code.length < 2)
-          return alert('Use a 2–3 character code.');
-        if (guilds.has(code))
-          return alert('That code already exists.');
-        if (guilds.size >= 25)
-          return alert('Limit is 25 guilds.');
+        if (!code || code.length < 2) {
+          alert('Use a 2–3 character code.');
+          return;
+        }
+        if (guilds.has(code)) {
+          alert('That code already exists.');
+          return;
+        }
+        if (guilds.size >= 25) {
+          alert('Limit is 25 guilds.');
+          return;
+        }
         const c = colorInput?.value || '#888';
         guilds.set(code, c);
         activeGuild = code;
@@ -573,8 +549,7 @@
       });
 
       clearGuildsBtn.addEventListener('click', () => {
-        if (!confirm('Remove all guilds and their assignments?'))
-          return;
+        if (!confirm('Remove all guilds and their assignments?')) return;
         guilds.clear();
         assignments = {};
         activeGuild = null;
@@ -584,8 +559,7 @@
       });
 
       clearAssignBtn.addEventListener('click', () => {
-        if (!confirm('Unassign all tiles?'))
-          return;
+        if (!confirm('Unassign all tiles?')) return;
         assignments = {};
         repaintAll();
         persist();
@@ -594,10 +568,7 @@
       repaintBtn.addEventListener('click', () => repaintAll());
 
       exportBtn.addEventListener('click', () => {
-        io.value = JSON.stringify(
-          { guilds: Object.fromEntries(guilds), assignments },
-          null, 2
-        );
+        io.value = JSON.stringify({ guilds: Object.fromEntries(guilds), assignments }, null, 2);
       });
 
       importBtn.addEventListener('click', () => {
@@ -608,8 +579,10 @@
           alert('Invalid JSON');
           return;
         }
-        if (!obj || typeof obj !== 'object')
-          return alert('Invalid object');
+        if (!obj || typeof obj !== 'object') {
+          alert('Invalid object');
+          return;
+        }
         if (obj.guilds) guilds = new Map(Object.entries(obj.guilds));
         if (obj.assignments) assignments = obj.assignments;
         activeGuild = null;
@@ -619,8 +592,7 @@
       });
 
       wipeBtn.addEventListener('click', () => {
-        if (!confirm('Wipe localStorage for this map?'))
-          return;
+        if (!confirm('Wipe localStorage for this map?')) return;
         localStorage.removeItem(STORAGE_KEY);
         alert('Storage cleared.');
       });
