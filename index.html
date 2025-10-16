@@ -326,29 +326,39 @@
       }
 
       function paintTile(p) {
-        const grp = p.closest('g[id^="ruin"]');
-        const type = grp ? getRuinType(grp.id) : null;
-        let baseColor = '#ccc';
+  const grp = p.closest('g[id^="ruin"]');
+  const type = grp ? getRuinType(grp.id) : null;
 
-        if (type && typeColors[type]) {
-          baseColor = getComputedStyle(document.documentElement)
-            .getPropertyValue(typeColors[type])
-            .trim();
-        }
+  let baseColor = '#ccc';
 
-        const code = assignments[p.id];
-         p.style.stroke = 'var(--tile-stroke)';
-         p.style.strokeWidth = 1;
+  if (type && typeColors[type]) {
+    const computed = getComputedStyle(document.documentElement)
+      .getPropertyValue(typeColors[type])
+      .trim();
 
-       if (code) {
-        p.style.fill = guilds.get(code) || '#888';
-        p.style.fillOpacity = 0.7;
-      } else {
-        p.style.fill = baseColor;
-        p.style.fillOpacity = 1;
-      }
-    }
+    // Fallback to hardcoded value if computed is empty
+    baseColor = computed || {
+      '1': '#dfeafe',
+      '2': '#cddcf9',
+      '3': '#e6efff',
+      '4': '#edf4fe',
+      '5': '#bdd0f8',
+      'throne': '#dfeafe'
+    }[type] || '#ccc';
+  }
 
+  const code = assignments[p.id];
+  p.style.stroke = 'var(--tile-stroke)';
+  p.style.strokeWidth = 1;
+
+  if (code) {
+    p.style.fill = guilds.get(code) || '#888';
+    p.style.fillOpacity = 0.7;
+  } else {
+    p.style.fill = baseColor;
+    p.style.fillOpacity = 1;
+  }
+}
 
       function addLabels() {
         if (!svg) return;
