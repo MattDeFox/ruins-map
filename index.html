@@ -337,24 +337,23 @@
         }
 
         const code = assignments[p.id];
-        p.style.stroke = '#3b3b3b';
-        p.style.strokeWidth = 1.5;
+         p.style.stroke = 'var(--tile-stroke)';
+         p.style.strokeWidth = 2;
 
-        if (code) {
-          const guildColor = guilds.get(code) || '#888';
-          p.style.fill = guildColor;
-          p.style.fillOpacity = 0.6;
-        } else {
-          p.style.fill = baseColor;
-          p.style.fillOpacity = 1;
-        }
+       if (code) {
+        p.style.fill = guilds.get(code) || '#888';
+        p.style.fillOpacity = 0.7;
+      } else {
+        p.style.fill = baseColor;
+        p.style.fillOpacity = 1;
       }
+    }
 
-      function repaintAll() {
-        if (!tilePaths) return;
-        tilePaths.forEach(p => paintTile(p));
-        addLabels();
-      }
+      //  function repaintAll() {
+      //    if (!tilePaths) return;
+      //    tilePaths.forEach(p => paintTile(p));
+      //    addLabels();
+      //   }
 
       function addLabels() {
         if (!svg) return;
