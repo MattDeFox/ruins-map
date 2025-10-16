@@ -349,12 +349,6 @@
       }
     }
 
-      //  function repaintAll() {
-      //    if (!tilePaths) return;
-      //    tilePaths.forEach(p => paintTile(p));
-      //    addLabels();
-      //   }
-
       function addLabels() {
         if (!svg) return;
         svg.querySelector('#_labels')?.remove();
@@ -393,6 +387,12 @@
 
         svg.appendChild(labelLayer);
       }
+
+       function repaintAll() {
+         if (!tilePaths) return;
+         tilePaths.forEach(p => paintTile(p));
+         addLabels();
+        }
 
       function attachInteractivity() {
         if (!svg) {
