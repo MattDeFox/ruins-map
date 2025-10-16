@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ruins Map – Guild Control</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+:root {
+  --map-bg: #a3aaba;
+  --tile-stroke: #2c2f35;
+  --label-color: #0b0f18;
+
+  /* Default theme colors */
+  --ruin1-color: #dfeafe;
+  --ruin2-color: #cddcf9;
+  --ruin3-color: #e6efff;
+  --ruin4-color: #edf4fe;
+  --ruin5-color: #bdd0f8;
+  --throne-color: #dfeafe;
+}
+
+html, body { height: 100%; margin: 0; }
+body {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 14px;
+  padding: 14px;
+  background: radial-gradient(60vmax 60vmax at 10% 0%, #101525 0, #0b0d12 55%);
+  color: #e6e9f2;
+  font: 14px/1.4 'Roboto', sans-serif;
+}
+
+#mapWrap {
+  background: var(--map-bg);
+  border: 1px solid #243048;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+
+#mapBox {
+  width: min(90vmin, 800px);
+  max-width: 800px;
+  min-width: 600px;
+  aspect-ratio: 1 / 1;
+  position: relative;
+}
+
+object#map {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: var(--map-bg);
+  border-radius: 10px;
+}
+#svgHost {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+#ui {
+  background: #121620;
+  border: 1px solid #243048;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+h1 {
+  font-size: 16px;
+  margin: 0 0 8px;
+  letter-spacing: .3px;
+  color: #d9e2ff;
+}
+
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+input[type="text"], input[type="color"], button {
+  font-family: 'Roboto', sans-serif;
+}
+
+input[type="text"] {
+  background: #0e1321;
+  color: #e6e9f2;
+  border: 1px solid #27324a;
+  border-radius: 8px;
+  padding: 8px 10px;
+  width: 90px;
+  text-transform: uppercase;
+}
+input[type="color"] {
+  width: 40px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #0e1321;
+}
+
+button {
+  background: #182134;
+  color: #e6e9f2;
+  border: 1px solid #2d3a58;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+button.primary {
+  border-color: #3a56ff55;
+  box-shadow: inset 0 0 0 1px #3a56ff33;
+}
+button.danger {
+  border-color: #ff6b6b66;
+  color: #ffc9c9;
+}
+button:disabled { opacity: .45; cursor: not-allowed; }
+
+#legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border: 1px solid #33405f;
+  border-radius: 20px; background: #1b2232;
+  cursor: pointer; user-select: none;
+}
+.chip .dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #888; box-shadow: 0 0 0 2px #0006 inset;
+}
+.chip.active { outline: 2px solid #7aa2ff; }
+.chip .code { font-weight: 700; letter-spacing: .5px; }
+.chip .rm { margin-left: 4px; opacity: .7; font-size: 12px; }
+
+#io {
+  width: 100%;
+  min-height: 140px;
+  background: #0d1220;
+  color: #dbe1f7;
+  border: 1px solid #2a3654;
+  border-radius: 10px;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.hint { color: #8a93a6; font-size: 12px; }
+.sep { height: 1px; background: #22304a; margin: 4px 0; opacity: .6; }
+
+.svg-label {
+  fill: var(--label-color);
+  font-size: 20px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+}
+</style>
+</head>
+<body>
+  <div id="mapWrap">
+    <div id="mapBox">
+      <object id="map" data="RuinsMapX.svg" type="image/svg+xml" tabindex="-1" aria-label="Ruins Map"></object>
+      <div id="svgHost"></div>
+    </div>
+  </div>
+
+  <aside id="ui" aria-label="Controls">
+    <div>
+      <h1>Guilds</h1>
+      <div class="row">
+        <input id="guildCode" maxlength="3" placeholder="TAG" />
+        <input type="color" id="guildColor" value="#7aa2ff" />
+        <button id="addGuild" class="primary">Add</button>
+        <button id="clearGuilds" class="danger">Clear All</button>
+      </div>
+      <div id="legend"></div>
+      <div class="hint">Click a chip to activate. Shift+Click tiles to unassign.</div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div>
+      <h1>Tiles</h1>
+      <div class="row">
+        <button id="clearAssignments" class="danger">Unassign All</button>
+        <button id="repaint">Repaint</button>
+      </div>
+      <div class="hint">Each guild may control up to 4 tiles.</div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div>
+      <h1>Save / Load</h1>
+      <div class="row">
+        <button id="exportBtn">Export JSON</button>
+        <button id="importBtn" class="primary">Import JSON</button>
+        <button id="wipeStorage" class="danger">Wipe Storage</button>
+      </div>
+      <textarea id="io" placeholder="Click Export to copy state or paste JSON to Import."></textarea>
+      <div class="hint">Auto-saved to localStorage as <code>ruinsMapState</code>.</div>
+    </div>
+  </aside>
+
+  <script>
+  (function(){
+    const STORAGE_KEY = 'ruinsMapState';
+    const MAX_TILES_PER_GUILD = 4;
+    let svg = null, tilePaths = [], activeGuild = null;
+    let guilds = new Map(), assignments = {};
+
+    const typeColors = {
+      '1': 'var(--ruin1-color)',
+      '2': 'var(--ruin2-color)',
+      '3': 'var(--ruin3-color)',
+      '4': 'var(--ruin4-color)',
+      '5': 'var(--ruin5-color)',
+      'throne': 'var(--throne-color)'
+    };
+
+    const mapObj = document.getElementById('map');
+    const svgHost = document.getElementById('svgHost');
+    const codeInput = document.getElementById('guildCode');
+    const colorInput = document.getElementById('guildColor');
+    const addBtn = document.getElementById('addGuild');
+    const clearGuildsBtn = document.getElementById('clearGuilds');
+    const legend = document.getElementById('legend');
+    const clearAssignBtn = document.getElementById('clearAssignments');
+    const repaintBtn = document.getElementById('repaint');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const wipeBtn = document.getElementById('wipeStorage');
+    const io = document.getElementById('io');
+
+    function normalizeCode(v){return (v||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);}
+    function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify({guilds:Object.fromEntries(guilds),assignments}));}
+    function restore(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;const d=JSON.parse(raw);if(d.guilds)guilds=new Map(Object.entries(d.guilds));if(d.assignments)assignments=d.assignments;}catch(e){console.warn(e);}}
+
+    function getRuinType(groupId){
+      const m = groupId.match(/^ruin(\d+)/i);
+      if(m) return m[1];
+      if(/throne/i.test(groupId)) return 'throne';
+      return null;
+    }
+
+    function paintTile(p){
+      const grp = p.closest('g[id^="ruin"]');
+      let type = grp ? getRuinType(grp.id) : null;
+      const base = typeColors[type] || '#ccc';
+      const code = assignments[p.id];
+      p.style.stroke = 'var(--tile-stroke)';
+      p.style.strokeWidth = 2;
+      p.style.fill = code ? (guilds.get(code) || '#888') : base;
+      p.style.fillOpacity = code ? 0.6 : 1;
+    }
+
+    function repaintAll(){tilePaths.forEach(p=>paintTile(p));addLabels();}
+
+    function addLabels(){
+      if(!svg)return;
+      svg.querySelector('#_labels')?.remove();
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('id','_labels');
+      g.setAttribute('pointer-events','none');
+      const groups = Array.from(svg.querySelectorAll('g[id^="ruin"]'));
+      for(const grp of groups){
+        const t = getRuinType(grp.id);
+        if(!t)continue;
+        const path = grp.querySelector('path');
+        if(!path)continue;
+        const b = path.getBBox();
+        const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+        text.setAttribute('class','svg-label');
+        text.setAttribute('x',b.x+b.width/2);
+        text.setAttribute('y',b.y+b.height/2);
+        text.textContent = (t==='throne')?'Throne':t;
+        g.appendChild(text);
+      }
+      svg.appendChild(g);
+    }
+
+    function attachInteractivity(){
+      tilePaths = Array.from(svg.querySelectorAll('path[id]'));
+      tilePaths.forEach(p=>{
+        p.style.cursor='pointer';
+        p.addEventListener('click',e=>{
+          const id=p.id;
+          const cur=assignments[id];
+          if(e.shiftKey||!activeGuild){delete assignments[id];}
+          else{
+            const count=Object.values(assignments).filter(v=>v===activeGuild).length;
+            const assigning=cur!==activeGuild;
+            if(assigning&&count>=MAX_TILES_PER_GUILD){alert(`Guild ${activeGuild} reached ${MAX_TILES_PER_GUILD} tiles.`);return;}
+            assignments[id]=assigning?activeGuild:undefined;
+            if(!assignments[id])delete assignments[id];
+          }
+          paintTile(p);persist();
+        });
+      });
+      repaintAll();
+    }
+
+    async function loadSVG(){
+      try{
+        const resp=await fetch(mapObj.getAttribute('data'));
+        const txt=await resp.text();
+        const doc=new DOMParser().parseFromString(txt,'image/svg+xml');
+        const imported=document.importNode(doc.documentElement,true);
+        svgHost.innerHTML='';svgHost.style.display='block';mapObj.style.display='none';
+        svgHost.appendChild(imported);
+        svg=svgHost.querySelector('svg');
+        return true;
+      }catch(e){alert('Failed to load SVG');return false;}
+    }
+
+    function renderLegend(){
+      legend.innerHTML='';
+      for(const[code,color]of guilds){
+        const chip=document.createElement('div');
+        chip.className='chip'+(activeGuild===code?' active':'');
+        chip.innerHTML=`<span class="dot" style="background:${color}"></span><span class="code">${code}</span><span class="rm">✕</span>`;
+        chip.addEventListener('click',e=>{
+          if(e.target.classList.contains('rm')){removeGuild(code);return;}
+          activeGuild=(activeGuild===code)?null:code;
+          renderLegend();
+        });
+        legend.appendChild(chip);
+      }
+    }
+
+    function removeGuild(code){
+      guilds.delete(code);
+      Object.keys(assignments).forEach(k=>{if(assignments[k]===code)delete assignments[k];});
+      if(activeGuild===code)activeGuild=null;
+      renderLegend();repaintAll();persist();
+    }
+
+    restore();renderLegend();
+
+    let tried=false;
+    mapObj.addEventListener('load',async()=>{
+      if(tried)return;tried=true;
+      const ok=await loadSVG();
+      if(ok)attachInteractivity();
+    },{once:true});
+
+    setTimeout(async()=>{if(svg)return;const ok=await loadSVG();if(ok)attachInteractivity();},500);
+
+    addBtn.addEventListener('click',()=>{
+      const code=normalizeCode(codeInput.value);
+      if(!code||guilds.has(code))return alert('Invalid or duplicate guild.');
+      guilds.set(code,colorInput.value||'#888');activeGuild=code;
+      codeInput.value='';renderLegend();persist();
+    });
+    clearGuildsBtn.addEventListener('click',()=>{
+      if(!confirm('Remove all guilds?'))return;
+      guilds.clear();assignments={};activeGuild=null;renderLegend();repaintAll();persist();
+    });
+    clearAssignBtn.addEventListener('click',()=>{
+      if(!confirm('Unassign all tiles?'))return;
+      assignments={};repaintAll();persist();
+    });
+    repaintBtn.addEventListener('click',()=>repaintAll());
+    exportBtn.addEventListener('click',()=>{io.value=JSON.stringify({guilds:Object.fromEntries(guilds),assignments},null,2);});
+    importBtn.addEventListener('click',()=>{
+      try{
+        const data=JSON.parse(io.value);
+        if(data.guilds)guilds=new Map(Object.entries(data.guilds));
+        if(data.assignments)assignments=data.assignments;
+        activeGuild=null;renderLegend();repaintAll();persist();
+      }catch(e){alert('Invalid JSON');}
+    });
+    wipeBtn.addEventListener('click',()=>{localStorage.removeItem(STORAGE_KEY);alert('Storage cleared.');});
+    codeInput.addEventListener('keydown',e=>{if(e.key==='Enter')addBtn.click();});
+  })();
+  </script>
+</body>
+</html>
