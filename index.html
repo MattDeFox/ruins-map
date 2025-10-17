@@ -291,20 +291,24 @@
         labelLayer.setAttribute('id', '_labels');
         labelLayer.setAttribute('pointer-events', 'none');
         const paths = Array.from(svg.querySelectorAll(tileSelector));
-        for (const p of paths) {
-          const id = p.id || p.getAttribute('id');
-          const type = getRuinType(id);
-          if (!type) continue;
-          const bbox = p.getBBox();
-          const cx = bbox.x + bbox.width / 2;
-          const cy = bbox.y + bbox.height / 2;
-          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          text.setAttribute('x', cx);
-          text.setAttribute('y', cy);
-          text.setAttribute('class', 'svg-label');
-          text.textContent = type === 'throne' ? '♛' : type;
-          labelLayer.appendChild(text);
-        }
+    for (const p of paths) {
+  const id = p.id || p.getAttribute('id');
+  const type = getRuinType(id);
+  if (!type) continue;
+  const bbox = p.getBBox();
+  const cx = bbox.x + bbox.width / 2;
+  const cy = bbox.y + bbox.height / 2;
+
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.setAttribute('x', cx);
+  text.setAttribute('y', cy);
+  text.setAttribute('class', 'svg-label');
+  text.setAttribute('fill', '#fff');   // for darker tiles
+  text.setAttribute('stroke', '#000'); // outline text
+  text.textContent = type === 'throne' ? '♛' : type;
+
+  labelLayer.appendChild(text);
+}
         text.setAttribute('fill', '#fff');   // for darker tiles
         text.setAttribute('stroke', '#000'); // outline text
         svg.appendChild(labelLayer);
