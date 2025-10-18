@@ -176,6 +176,7 @@
       text-anchor: middle;
       dominant-baseline: middle;
       pointer-events: none;
+      user-select: none;
       stroke: #fff;
       stroke-width: 1;
     }
@@ -285,33 +286,49 @@
       }
 
       function addLabels() {
-        if (!svg) return;
-        svg.querySelector('#_labels')?.remove();
-        const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        labelLayer.setAttribute('id', '_labels');
-        labelLayer.setAttribute('pointer-events', 'none');
-        const paths = Array.from(svg.querySelectorAll(tileSelector));
-    for (const p of paths) {
-  const id = p.id || p.getAttribute('id');
-  const type = getRuinType(id);
-  if (!type) continue;
-  const bbox = p.getBBox();
-  const cx = bbox.x + bbox.width / 2;
-  const cy = bbox.y + bbox.height / 2;
+  if (!svg) return;
 
-  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  text.setAttribute('x', cx);
-  text.setAttribute('y', cy);
-  text.setAttribute('class', 'svg-label');
-  text.setAttribute('fill', '#fff');   // for darker tiles
-  text.setAttribute('stroke', '#000'); // outline text
-  text.textContent = type === 'throne' ? '♛' : type;
+  svg.querySelector('#_labels')?.remove();
 
-  labelLayer.appendChild(text);
+  const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  labelLayer.setAttribute('id', '_labels');
+  labelLayer.setAttribute('pointer-events', 'none');
+
+  const paths = Array.from(svg.querySelectorAll(tileSelector));
+
+  for (const p of paths) {
+    const id = p.id || p.getAttribute('id');
+    const type = getRuinType(id);
+    if (!type) continue;
+
+    const bbox = p.getBBox();
+    const cx = bbox.x + bbox.width / 2;
+    const cy = bbox.y + bbox.height / 2;
+
+    const code = assignments[id];
+    const label = code ? `${code}\n${type === 'throne' ? '♛' : type}` : (type === 'throne' ? '♛' : type);
+
+    const lines = label.split('\n');
+    lines.forEach((line, i) => {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', cx);
+      text.setAttribute('y', cy + (i * 16) - (lines.length - 1) * 8); // vertical offset
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'middle');
+      text.setAttribute('font-family', 'system-ui, sans-serif');
+      text.setAttribute('font-weight', '900');
+      text.setAttribute('font-size', '16');
+      text.setAttribute('fill', '#fff');
+      text.setAttribute('stroke', '#000');
+      text.setAttribute('stroke-width', '1');
+      text.classList.add('svg-label');
+      text.textContent = line;
+      labelLayer.appendChild(text);
+    });
+  }
+
+  svg.appendChild(labelLayer);
 }
-
-        svg.appendChild(labelLayer);
-      }
 
       function repaintAll() {
         tilePaths.forEach(p => paintTile(p));
