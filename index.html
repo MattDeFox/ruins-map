@@ -314,7 +314,7 @@
     lines.forEach((line, i) => {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('x', cx);
-      text.setAttribute('y', cy + (i * 16) - (lines.length - 1) * 8); // stack vertically
+      text.setAttribute('y', cy + (i * 16) - (lines.length - 1) * 10); // stack vertically
       text.setAttribute('text-anchor', 'middle');
       text.setAttribute('dominant-baseline', 'middle');
       text.setAttribute('font-family', 'system-ui, sans-serif');
