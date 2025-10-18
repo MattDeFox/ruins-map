@@ -276,7 +276,7 @@ function addLabels() {
     const type = getRuinType(id);
     if (!type) continue;
 
-    const bbox = p.getBBox();
+    const bbox = (p.closest('g') || p).getBBox();
     const cx = bbox.x + bbox.width / 2;
     const cy = bbox.y + bbox.height / 2;
 
