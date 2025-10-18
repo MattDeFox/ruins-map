@@ -337,6 +337,9 @@
     labelLayer.appendChild(text);
   });
 }
+      svg.appendChild(labelLayer);
+}
+
       function repaintAll() {
         tilePaths.forEach(p => paintTile(p));
         addLabels();
