@@ -246,7 +246,7 @@
       let svg = null, tilePaths = [], activeGuild = null;
       let guilds = new Map(), assignments = {};
 
-      const tileSelector = 'path[id^="ruin"], path[id^="throne"], path[id*="ruin"], path[id*="throne"]';
+      const tileSelector = 'path[id^="ruin"], path[id*="ruin"], path[id^="throne"], path[id*="throne"]';
       const mapObj = document.getElementById('map');
       const svgHost = document.getElementById('svgHost');
       const codeInput = document.getElementById('guildCode');
@@ -260,16 +260,17 @@
   if (/throne/i.test(id)) return 'throne';  // this catches "throne1"
   return null;
 }
-
-
+      
       function paintTile(p) {
-  const grp = p.closest('g[id^="ruin"]') || p.closest('g[id*="throne"]');
+  const grp = p.closest('g[id^="ruin"]') || p.closest('g[id^="throne"]');
   const type = grp ? getRuinType(grp.id) : getRuinType(p.id);
 
   let baseColor = '#ccc';
 
   if (type && typeColors[type]) {
-    const computed = getComputedStyle(document.documentElement).getPropertyValue(typeColors[type]).trim();
+    const computed = getComputedStyle(document.documentElement)
+      .getPropertyValue(typeColors[type])
+      .trim();
     baseColor = computed || fallbackColors[type] || '#ccc';
   }
 
@@ -278,6 +279,7 @@
 
   p.style.stroke = 'var(--tile-stroke)';
   p.style.strokeWidth = 1.5;
+  p.style.cursor = 'pointer';
 
   if (code) {
     const fillColor = guilds.get(code) || '#888';
@@ -285,7 +287,7 @@
     p.style.fillOpacity = isThrone ? 0.9 : 0.6;
   } else {
     p.style.fill = baseColor;
-    p.style.fillOpacity = isThrone ? 1 : 1;
+    p.style.fillOpacity = 1;
   }
 }
 
