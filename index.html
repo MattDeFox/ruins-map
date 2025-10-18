@@ -330,13 +330,13 @@
 
     // Bottom line: Ruin type or ♛
     const ruinText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    ruinText.setAttribute('x', cx);
-    ruinText.setAttribute('y', cy + 14);
+    ruinText.setAttribute('x', cx + 14);
+    ruinText.setAttribute('y', cy + 8);
     ruinText.setAttribute('class', 'svg-label');
     ruinText.setAttribute('fill', '#fff');
     ruinText.setAttribute('stroke', '#000');
     ruinText.setAttribute('stroke-width', '1');
-    ruinText.setAttribute('font-size', type === 'throne' ? '50' : '40');
+    ruinText.setAttribute('font-size', type === 'throne' ? '48' : '48');
     ruinText.textContent = type === 'throne' ? '♛' : type;
     labelLayer.appendChild(ruinText);
   }
