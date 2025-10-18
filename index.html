@@ -261,37 +261,7 @@
   return null;
 }
       
-      function paintTile(p) {
-  const grp = p.closest('g[id^="ruin"]') || p.closest('g[id^="throne"]');
-  const type = grp ? getRuinType(grp.id) : getRuinType(p.id);
-
-  let baseColor = '#ccc';
-
-  if (type && typeColors[type]) {
-    const computed = getComputedStyle(document.documentElement)
-      .getPropertyValue(typeColors[type])
-      .trim();
-    baseColor = computed || fallbackColors[type] || '#ccc';
-  }
-
-  const code = assignments[p.id];
-  const isThrone = (type === 'throne');
-
-  p.style.stroke = 'var(--tile-stroke)';
-  p.style.strokeWidth = 1.5;
-  p.style.cursor = 'pointer';
-
-  if (code) {
-    const fillColor = guilds.get(code) || '#888';
-    p.style.fill = fillColor;
-    p.style.fillOpacity = isThrone ? 0.9 : 0.6;
-  } else {
-    p.style.fill = baseColor;
-    p.style.fillOpacity = 1;
-  }
-}
-
-  function addLabels() {
+function addLabels() {
   if (!svg) return;
 
   svg.querySelector('#_labels')?.remove();
@@ -322,7 +292,7 @@
       tagText.setAttribute('class', 'svg-label');
       tagText.setAttribute('fill', guildColor);
       tagText.setAttribute('stroke', '#000');
-      tagText.setAttribute('stroke-width', '0.5');
+      tagText.setAttribute('stroke-width', '1');
       tagText.setAttribute('font-size', '24');
       tagText.textContent = code;
       labelLayer.appendChild(tagText);
@@ -331,19 +301,19 @@
     // Bottom line: Ruin type or ♛
     const ruinText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     ruinText.setAttribute('x', cx);
-    ruinText.setAttribute('y', cy + 12);
+    ruinText.setAttribute('y', cy + 14);
     ruinText.setAttribute('class', 'svg-label');
     ruinText.setAttribute('fill', '#fff');
     ruinText.setAttribute('stroke', '#000');
     ruinText.setAttribute('stroke-width', '1');
-    ruinText.setAttribute('font-size', type === 'throne' ? '48' : '48');
+    ruinText.setAttribute('font-size', type === 'throne' ? '38' : '28');
     ruinText.textContent = type === 'throne' ? '♛' : type;
     labelLayer.appendChild(ruinText);
   }
 
   svg.appendChild(labelLayer);
 }
-
+      
       function repaintAll() {
         tilePaths.forEach(p => paintTile(p));
         addLabels();
