@@ -289,7 +289,6 @@
   if (!svg) return;
 
   svg.querySelector('#_labels')?.remove();
-
   const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   labelLayer.setAttribute('id', '_labels');
   labelLayer.setAttribute('pointer-events', 'none');
@@ -306,27 +305,29 @@
     const cy = bbox.y + bbox.height / 2;
 
     const code = assignments[id];
-    const lines = [];
 
-    if (code) lines.push(code);
-    lines.push(type === 'throne' ? '♛' : type);
+    if (code) {
+      const guildColor = guilds.get(code) || '#888';
 
-    lines.forEach((line, i) => {
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', cx);
-      text.setAttribute('y', cy + (i * 16) - (lines.length - 1) * 10); // stack vertically
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('dominant-baseline', 'middle');
-      text.setAttribute('font-family', 'system-ui, sans-serif');
-      text.setAttribute('font-weight', '900');
-      text.setAttribute('font-size', '16');
-      text.setAttribute('fill', '#fff');
-      text.setAttribute('stroke', '#000');
-      text.setAttribute('stroke-width', '1');
-      text.classList.add('svg-label');
-      text.textContent = line;
-      labelLayer.appendChild(text);
-    });
+      // Top line: Guild tag
+      const tagText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      tagText.setAttribute('x', cx);
+      tagText.setAttribute('y', cy - 10); // move slightly upward
+      tagText.setAttribute('class', 'svg-label');
+      tagText.setAttribute('fill', guildColor);
+      tagText.textContent = code;
+      labelLayer.appendChild(tagText);
+    }
+
+    // Bottom line: Ruin type or ♛
+    const ruinText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    ruinText.setAttribute('x', cx);
+    ruinText.setAttribute('y', cy + 12); // move slightly downward
+    ruinText.setAttribute('class', 'svg-label');
+    ruinText.setAttribute('fill', '#fff');   // white fill
+    ruinText.setAttribute('stroke', '#000'); // black outline
+    ruinText.textContent = type === 'throne' ? '♛' : type;
+    labelLayer.appendChild(ruinText);
   }
 
   svg.appendChild(labelLayer);
