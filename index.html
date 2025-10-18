@@ -260,6 +260,7 @@
   if (/throne/i.test(id)) return 'throne';  // this catches "throne1"
   return null;
 }
+      
       function paintTile(p) {
   const grp = p.closest('g[id^="ruin"]') || p.closest('g[id^="throne"]');
   const type = grp ? getRuinType(grp.id) : getRuinType(p.id);
@@ -289,6 +290,7 @@
     p.style.fillOpacity = 1;
   }
 }      
+      
 function addLabels() {
   if (!svg) return;
 
