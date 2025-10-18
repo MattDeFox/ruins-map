@@ -318,9 +318,12 @@
       // Top line: Guild tag
       const tagText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       tagText.setAttribute('x', cx);
-      tagText.setAttribute('y', cy - 10); // move slightly upward
+      tagText.setAttribute('y', cy - 10);
       tagText.setAttribute('class', 'svg-label');
       tagText.setAttribute('fill', guildColor);
+      tagText.setAttribute('stroke', '#000');
+      tagText.setAttribute('stroke-width', '1');
+      tagText.setAttribute('font-size', '24');
       tagText.textContent = code;
       labelLayer.appendChild(tagText);
     }
@@ -328,16 +331,19 @@
     // Bottom line: Ruin type or ♛
     const ruinText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     ruinText.setAttribute('x', cx);
-    ruinText.setAttribute('y', cy + 12); // move slightly downward
+    ruinText.setAttribute('y', cy + 14);
     ruinText.setAttribute('class', 'svg-label');
-    ruinText.setAttribute('fill', '#fff');   // white fill
-    ruinText.setAttribute('stroke', '#000'); // black outline
+    ruinText.setAttribute('fill', '#fff');
+    ruinText.setAttribute('stroke', '#000');
+    ruinText.setAttribute('stroke-width', '1');
+    ruinText.setAttribute('font-size', type === 'throne' ? '38' : '28');
     ruinText.textContent = type === 'throne' ? '♛' : type;
     labelLayer.appendChild(ruinText);
   }
 
   svg.appendChild(labelLayer);
 }
+
       function repaintAll() {
         tilePaths.forEach(p => paintTile(p));
         addLabels();
