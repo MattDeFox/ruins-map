@@ -185,7 +185,7 @@
 <body>
   <div id="mapWrap">
     <div id="mapBox">
-      <object id="map" data="RuinsMapX.svg" type="image/svg+xml"></object>
+      <object id="map" data="ruins_map_aligned.svg" type="image/svg+xml"></object>
       <div id="svgHost"></div>
     </div>
   </div>
@@ -223,18 +223,11 @@
   </aside>
 
   <script>
-    (function(){
+    (function () {
       const STORAGE_KEY = 'ruinsMapState';
       const MAX_TILES_PER_GUILD = 4;
-      const typeColors = {
-        '1': 'var(--ruin1-color)',
-        '2': 'var(--ruin2-color)',
-        '3': 'var(--ruin3-color)',
-        '4': 'var(--ruin4-color)',
-        '5': 'var(--ruin5-color)',
-        'throne': 'var(--throne-color)'
-      };
-      const fallbackColors = {
+
+      const BASE_TILE_COLORS = {
         '1': '#dfeafe',
         '2': '#cddcf9',
         '3': '#e6efff',
@@ -243,10 +236,21 @@
         'throne': '#dfeafe'
       };
 
-      let svg = null, tilePaths = [], activeGuild = null;
-      let guilds = new Map(), assignments = {};
+      const CLICKABLE_SELECTOR = [
+        'path[data-tier="1"]',
+        'path[data-tier="2"]',
+        'path[data-tier="3"]',
+        'path[data-tier="4"]',
+        'path[data-tier="5"]',
+        '#throne1'
+      ].join(', ');
 
-      const tileSelector = 'path[id^="ruin"], path[id*="ruin"], path[id^="throne"], path[id*="throne"]';
+      let svg = null;
+      let tilePaths = [];
+      let activeGuild = null;
+      let guilds = new Map();
+      let assignments = {};
+
       const mapObj = document.getElementById('map');
       const svgHost = document.getElementById('svgHost');
       const codeInput = document.getElementById('guildCode');
@@ -254,120 +258,163 @@
       const legend = document.getElementById('legend');
       const io = document.getElementById('io');
 
-      function getRuinType(id) {
-  const m = id.match(/ruin(\d+)/i);
-  if (m) return m[1];
-  if (/throne/i.test(id)) return 'throne';  // this catches "throne1"
-  return null;
-}
-function paintTile(p) {
-  const grp = p.closest('g[id^="ruin"]') || p.closest('g[id^="throne"]');
-  const type = grp ? getRuinType(grp.id) : getRuinType(p.id);
+      function saveState() {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            guilds: Object.fromEntries(guilds),
+            assignments
+          })
+        );
+      }
 
-  let baseColor = '#ccc';
+      function getTileId(path) {
+        return path.id || path.getAttribute('id');
+      }
 
-  if (type && typeColors[type]) {
-    const computed = getComputedStyle(document.documentElement)
-      .getPropertyValue(typeColors[type])
-      .trim();
-    baseColor = computed || fallbackColors[type] || '#ccc';
-  }
+      function getTileType(path) {
+        const id = getTileId(path);
+        const parentId = path.parentElement?.id || '';
 
-  const code = assignments[p.id];
-  const isThrone = (type === 'throne');
+        if (id === 'throne1' || /throne/i.test(parentId) || /throne/i.test(id)) {
+          return 'throne';
+        }
 
-  p.style.stroke = 'var(--tile-stroke)';
-  p.style.strokeWidth = 1.5;
-  p.style.cursor = 'pointer';
+        const tier = path.getAttribute('data-tier');
+        if (tier && /^[1-5]$/.test(tier)) {
+          return tier;
+        }
 
-  if (code) {
-    const fillColor = guilds.get(code) || '#888';
-    p.style.fill = fillColor;
-    p.style.fillOpacity = isThrone ? 0.9 : 0.6;
-  } else {
-    p.style.fill = baseColor;
-    p.style.fillOpacity = 1;
-  }
-}
-      
-function addLabels() {
-  if (!svg) return;
+        const ruinMatch = (parentId || id).match(/ruin(\d+)/i);
+        return ruinMatch ? ruinMatch[1] : null;
+      }
 
-  svg.querySelector('#_labels')?.remove();
-  const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  labelLayer.setAttribute('id', '_labels');
-  labelLayer.setAttribute('pointer-events', 'none');
+      function getBaseTileColor(path) {
+        const type = getTileType(path);
+        return BASE_TILE_COLORS[type] || '#d9dde6';
+      }
 
-  const paths = Array.from(svg.querySelectorAll(tileSelector));
+      function styleDangerZones() {
+        if (!svg) return;
+        const dangerTiles = svg.querySelectorAll('#danger_ne_tile, #danger_sw_tile');
+        dangerTiles.forEach((p) => {
+          p.style.fill = '#eef1f6';
+          p.style.fillOpacity = '1';
+          p.style.stroke = 'var(--tile-stroke)';
+          p.style.strokeWidth = '1.5';
+        });
+      }
 
-  for (const p of paths) {
-    const id = p.id || p.getAttribute('id');
-    const type = getRuinType(id);
-    if (!type) continue;
+      function paintTile(path) {
+        const id = getTileId(path);
+        const type = getTileType(path);
+        const assignedGuild = assignments[id];
 
-    const bbox = p.getBBox();
-    const cx = bbox.x + bbox.width / 2;
-    const cy = bbox.y + bbox.height / 2;
+        path.style.stroke = 'var(--tile-stroke)';
+        path.style.strokeWidth = '1.5';
+        path.style.cursor = 'pointer';
 
-    const code = assignments[id];
+        if (assignedGuild) {
+          path.style.fill = guilds.get(assignedGuild) || '#888';
+          path.style.fillOpacity = type === 'throne' ? '0.9' : '0.6';
+        } else {
+          path.style.fill = getBaseTileColor(path);
+          path.style.fillOpacity = '1';
+        }
+      }
 
-    if (code) {
-      const guildColor = guilds.get(code) || '#888';
+      function addLabels() {
+        if (!svg) return;
 
-      // Top line: Guild tag
-      const tagText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      tagText.setAttribute('x', cx);
-      tagText.setAttribute('y', cy - 10); // move slightly upward
-      tagText.setAttribute('class', 'svg-label');
-      tagText.setAttribute('fill', guildColor);
-      tagText.textContent = code;
-      labelLayer.appendChild(tagText);
-    }
+        svg.querySelector('#_labels')?.remove();
 
-    // Bottom line: Ruin type or ♛
-    const ruinText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    ruinText.setAttribute('x', cx);
-    ruinText.setAttribute('y', cy + 12); // move slightly downward
-    ruinText.setAttribute('class', 'svg-label');
-    ruinText.setAttribute('fill', '#fff');   // white fill
-    ruinText.setAttribute('stroke', '#000'); // black outline
-    ruinText.textContent = type === 'throne' ? '♛' : type;
-    labelLayer.appendChild(ruinText);
-  }
+        const labelLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        labelLayer.setAttribute('id', '_labels');
+        labelLayer.setAttribute('pointer-events', 'none');
 
-  svg.appendChild(labelLayer);
-}
-     
+        for (const path of tilePaths) {
+          const id = getTileId(path);
+          const type = getTileType(path);
+          if (!type) continue;
+
+          const bbox = path.getBBox();
+          const cx = bbox.x + (bbox.width / 2);
+          const cy = bbox.y + (bbox.height / 2);
+          const code = assignments[id];
+
+          if (code) {
+            const guildColor = guilds.get(code) || '#888';
+
+            const tagText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            tagText.setAttribute('x', cx);
+            tagText.setAttribute('y', cy - 10);
+            tagText.setAttribute('class', 'svg-label');
+            tagText.setAttribute('fill', guildColor);
+            tagText.textContent = code;
+            labelLayer.appendChild(tagText);
+          }
+
+          const typeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          typeText.setAttribute('x', cx);
+          typeText.setAttribute('y', cy + 12);
+          typeText.setAttribute('class', 'svg-label');
+          typeText.setAttribute('fill', '#fff');
+          typeText.setAttribute('stroke', '#000');
+          typeText.textContent = type === 'throne' ? '♛' : type;
+          labelLayer.appendChild(typeText);
+        }
+
+        svg.appendChild(labelLayer);
+      }
+
       function repaintAll() {
-        tilePaths.forEach(p => paintTile(p));
+        tilePaths.forEach(paintTile);
+        styleDangerZones();
         addLabels();
       }
 
+      function handleTileClick(path, event) {
+        const id = getTileId(path);
+        const type = getTileType(path);
+        const currentGuild = assignments[id];
+
+        if (event.shiftKey || !activeGuild) {
+          delete assignments[id];
+          repaintAll();
+          saveState();
+          return;
+        }
+
+        const isThrone = type === 'throne';
+        const currentCount = Object.entries(assignments).filter(([tileId, guildCode]) => {
+          return guildCode === activeGuild && tileId !== id;
+        }).length;
+
+        const isAssigning = currentGuild !== activeGuild;
+
+        if (isAssigning && currentCount >= MAX_TILES_PER_GUILD && !isThrone) {
+          alert(`Guild ${activeGuild} reached max of ${MAX_TILES_PER_GUILD} tiles.`);
+          return;
+        }
+
+        if (isAssigning) {
+          assignments[id] = activeGuild;
+        } else {
+          delete assignments[id];
+        }
+
+        repaintAll();
+        saveState();
+      }
+
       function attachInteractivity() {
-        tilePaths = Array.from(svg.querySelectorAll(tileSelector));
-        tilePaths.forEach(p => {
-          p.style.cursor = 'pointer';
-          p.addEventListener('click', e => {
-            const id = p.id || p.getAttribute('id');
-            const cur = assignments[id];
-            const type = getRuinType(id);
-            if (e.shiftKey || !activeGuild) {
-              delete assignments[id];
-            } else {
-              const isThrone = type === 'throne';
-              const count = Object.values(assignments).filter(v => v === activeGuild).length;
-              const isAssigning = cur !== activeGuild;
-              if (isAssigning && count >= MAX_TILES_PER_GUILD && !isThrone) {
-                alert(`Guild ${activeGuild} reached max of ${MAX_TILES_PER_GUILD} tiles.`);
-                return;
-              }
-              assignments[id] = isAssigning ? activeGuild : undefined;
-              if (assignments[id] === undefined) delete assignments[id];
-            }
-            paintTile(p);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ guilds: Object.fromEntries(guilds), assignments }));
-          });
+        tilePaths = Array.from(svg.querySelectorAll(CLICKABLE_SELECTOR));
+
+        tilePaths.forEach((path) => {
+          path.style.cursor = 'pointer';
+          path.addEventListener('click', (event) => handleTileClick(path, event));
         });
+
         repaintAll();
       }
 
@@ -378,11 +425,15 @@ function addLabels() {
           const text = await resp.text();
           const parsed = new DOMParser().parseFromString(text, 'image/svg+xml');
           const root = parsed.documentElement;
+
           svgHost.innerHTML = '';
           svgHost.appendChild(document.importNode(root, true));
+
           svg = svgHost.querySelector('svg');
           svg.setAttribute('width', '100%');
           svg.setAttribute('height', '100%');
+          svg.style.background = 'transparent';
+
           svgHost.style.display = 'block';
           mapObj.style.display = 'none';
           return true;
@@ -394,53 +445,83 @@ function addLabels() {
 
       function renderLegend() {
         legend.innerHTML = '';
+
         for (const [code, color] of guilds) {
           const chip = document.createElement('div');
           chip.className = 'chip' + (activeGuild === code ? ' active' : '');
           chip.innerHTML = `<span class="dot" style="background:${color}"></span><span class="code">${code}</span><span class="rm">✕</span>`;
-          chip.querySelector('.rm').addEventListener('click', () => {
+
+          chip.querySelector('.rm').addEventListener('click', (event) => {
+            event.stopPropagation();
             guilds.delete(code);
-            Object.keys(assignments).forEach(k => {
-              if (assignments[k] === code) delete assignments[k];
+
+            Object.keys(assignments).forEach((tileId) => {
+              if (assignments[tileId] === code) delete assignments[tileId];
             });
+
             if (activeGuild === code) activeGuild = null;
-            renderLegend(); repaintAll();
+
+            renderLegend();
+            repaintAll();
+            saveState();
           });
+
           chip.addEventListener('click', () => {
-            activeGuild = (activeGuild === code) ? null : code;
+            activeGuild = activeGuild === code ? null : code;
             renderLegend();
           });
+
           legend.appendChild(chip);
         }
       }
 
       document.getElementById('addGuild').onclick = () => {
-        const code = (codeInput.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+        const code = (codeInput.value || '')
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '')
+          .slice(0, 3);
+
         if (!code || guilds.has(code)) return;
-        if (guilds.size >= 25) return alert('Max 25 guilds.');
+        if (guilds.size >= 25) {
+          alert('Max 25 guilds.');
+          return;
+        }
+
         guilds.set(code, colorInput.value);
         activeGuild = code;
         codeInput.value = '';
         renderLegend();
+        saveState();
       };
 
       document.getElementById('clearGuilds').onclick = () => {
-        if (confirm('Clear all guilds?')) {
-          guilds.clear(); assignments = {}; activeGuild = null;
-          renderLegend(); repaintAll();
-        }
+        if (!confirm('Clear all guilds?')) return;
+        guilds.clear();
+        assignments = {};
+        activeGuild = null;
+        renderLegend();
+        repaintAll();
+        saveState();
       };
 
       document.getElementById('clearAssignments').onclick = () => {
-        if (confirm('Unassign all tiles?')) {
-          assignments = {}; repaintAll();
-        }
+        if (!confirm('Unassign all tiles?')) return;
+        assignments = {};
+        repaintAll();
+        saveState();
       };
 
       document.getElementById('repaint').onclick = repaintAll;
 
       document.getElementById('exportBtn').onclick = () => {
-        io.value = JSON.stringify({ guilds: Object.fromEntries(guilds), assignments }, null, 2);
+        io.value = JSON.stringify(
+          {
+            guilds: Object.fromEntries(guilds),
+            assignments
+          },
+          null,
+          2
+        );
       };
 
       document.getElementById('importBtn').onclick = () => {
@@ -448,7 +529,9 @@ function addLabels() {
           const obj = JSON.parse(io.value);
           guilds = new Map(Object.entries(obj.guilds || {}));
           assignments = obj.assignments || {};
-          renderLegend(); repaintAll();
+          renderLegend();
+          repaintAll();
+          saveState();
         } catch {
           alert('Invalid JSON');
         }
@@ -464,7 +547,6 @@ function addLabels() {
         if (ok) attachInteractivity();
       });
 
-      // Restore state
       try {
         const state = JSON.parse(localStorage.getItem(STORAGE_KEY));
         if (state) {
@@ -472,6 +554,7 @@ function addLabels() {
           assignments = state.assignments || {};
         }
       } catch {}
+
       renderLegend();
     })();
   </script>
